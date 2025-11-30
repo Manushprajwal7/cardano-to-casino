@@ -1,0 +1,32 @@
+defaults:
+  - base
+  - /sessions/operators/operator-a
+  - /sessions/game-types/slots
+  - /sessions/environments/development
+  - _self_
+
+sessions:
+  # Session lifecycle configurations
+  auto_close_after_hours: 24
+  max_log_entries: 100000
+  merkle_tree:
+    algorithm: "sha256"
+    encoding: "hex"
+
+  # Validation rules
+  validation:
+    require_operator_signature: true
+    max_session_duration_hours: 168
+    min_log_entries: 10
+
+  # Log processing
+  log_processing:
+    batch_size: 1000
+    supported_formats: ["json", "csv", "text"]
+    max_file_size_mb: 50
+
+  # UI defaults
+  ui:
+    default_view: "table"
+    items_per_page: 25
+    refresh_interval_seconds: 30

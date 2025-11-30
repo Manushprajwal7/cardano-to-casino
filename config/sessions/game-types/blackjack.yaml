@@ -1,0 +1,26 @@
+game_type:
+  name: "blackjack"
+  category: "table"
+
+  log_schema:
+    required_fields:
+      [
+        "timestamp",
+        "player_hand",
+        "dealer_hand",
+        "bet_amount",
+        "payout",
+        "outcome",
+      ]
+    validation_rules:
+      bet_amount:
+        min: 5
+        max: 5000
+      payout:
+        min: 0
+        max: 50000
+
+  merkle_tree:
+    leaf_hash_fields:
+      ["timestamp", "player_hand", "dealer_hand", "bet_amount", "payout"]
+    salt_required: true

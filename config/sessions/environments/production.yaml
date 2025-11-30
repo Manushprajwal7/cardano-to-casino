@@ -1,0 +1,7 @@
+environment:
+  name: "production"
+  log_level: "info"
+  auto_close_after_hours: 24
+  max_log_entries: 100000
+  ui:
+    refresh_interval_seconds: 60

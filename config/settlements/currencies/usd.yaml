@@ -1,0 +1,6 @@
+currency:
+  code: "USD"
+  name: "US Dollar"
+  decimals: 2
+  symbol: "$"
+  min_transaction_amount: 100 # 1 USD in cents

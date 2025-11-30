@@ -1,0 +1,7 @@
+environment:
+  name: "staging"
+  log_level: "debug"
+  auto_close_after_hours: 48
+  max_log_entries: 50000
+  ui:
+    refresh_interval_seconds: 30

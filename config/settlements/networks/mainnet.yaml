@@ -1,0 +1,15 @@
+network:
+  name: "mainnet"
+  id: 1
+  explorer_url: "https://cexplorer.io"
+  blockfrost_url: "https://cardano-mainnet.blockfrost.io/api/v0"
+
+  transaction:
+    min_fee_a: 44
+    min_fee_b: 155381
+    pool_deposit: 500000000
+    key_deposit: 2000000
+
+  constraints:
+    max_tx_size: 16384
+    max_value_size: 5000

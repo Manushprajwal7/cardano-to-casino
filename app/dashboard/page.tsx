@@ -13,11 +13,14 @@ import { BlockchainVisualizer } from "@/components/dashboard/blockchain-visualiz
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { useBlockfrostData } from "@/hooks/use-blockfrost-data";
 import { useAuth } from "@/contexts/auth-context";
+import { useHydraContext } from "@/components/hydra/hydra-provider";
+import { HydraStatusIndicator } from "@/components/hydra/hydra-status-indicator";
 
 export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [showAuthLoader, setShowAuthLoader] = useState(false);
   const { user } = useAuth();
+  const { isConnected, isReady, error } = useHydraContext();
 
   // Fetch data from our API endpoints
   const {
@@ -126,6 +129,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <HydraStatusIndicator />
               <span className="text-sm text-muted-foreground">
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </span>

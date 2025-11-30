@@ -1,0 +1,26 @@
+game_type:
+  name: "poker"
+  category: "table"
+
+  log_schema:
+    required_fields:
+      [
+        "timestamp",
+        "player_cards",
+        "community_cards",
+        "bet_amount",
+        "payout",
+        "hand_rank",
+      ]
+    validation_rules:
+      bet_amount:
+        min: 10
+        max: 10000
+      payout:
+        min: 0
+        max: 100000
+
+  merkle_tree:
+    leaf_hash_fields:
+      ["timestamp", "player_cards", "community_cards", "bet_amount", "payout"]
+    salt_required: true

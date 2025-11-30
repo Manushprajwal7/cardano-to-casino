@@ -1,0 +1,13 @@
+# Operator-specific configurations
+operator:
+  id: "operator-a"
+  name: "Vegas Dreams Casino"
+  did: "did:prism:..."
+  signature_required: true
+  settlement_auto_approve: false
+  max_concurrent_sessions: 50
+
+  game_limits:
+    max_bet_per_round: 10000
+    max_payout_per_session: 100000
+    allowed_game_types: ["slots", "blackjack", "roulette"]

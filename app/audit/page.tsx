@@ -44,31 +44,11 @@ import {
   initLucid,
   buildSettlementTransaction,
   submitTransaction,
-} from "@/lib/hydra-utils";
+} from "@/lib/lucid-utils";
 import { useWallet } from "@meshsdk/react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/auth-context";
-
-// Placeholder component for MerkleTree3DExplorer
-function MerkleTree3DExplorer() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>3D Merkle Tree Explorer</CardTitle>
-        <CardDescription>
-          Interactive 3D visualization of Merkle tree structure
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
-          <p className="text-muted-foreground">
-            3D Merkle Tree Visualization Placeholder
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { MerkleTree3DExplorer } from "@/components/audit/merkle-tree-3d";
 
 // Define types for our data structures
 interface Settlement {

@@ -1,0 +1,26 @@
+# Hydra Base Configuration
+
+hydra:
+  # Default connection settings
+  host: "localhost"
+  port: 4000
+  api_port: 4001
+  network_id: 0 # Preprod
+
+  # Transaction settings
+  transaction:
+    timeout_seconds: 30
+    max_retries: 3
+    confirmation_blocks: 6
+
+  # Head settings
+  head:
+    auto_commit_utxos: true
+    contestation_period_seconds: 300
+    snapshot_interval_seconds: 60
+
+  # Security settings
+  security:
+    require_signature: true
+    validate_transactions: true
+    monitor_participants: true

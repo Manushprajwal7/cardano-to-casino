@@ -1,0 +1,13 @@
+# Operator-specific configurations
+operator:
+  id: "operator-c"
+  name: "Las Vegas Luxury Casino"
+  did: "did:prism:..."
+  signature_required: true
+  settlement_auto_approve: false
+  max_concurrent_sessions: 25
+
+  game_limits:
+    max_bet_per_round: 100000
+    max_payout_per_session: 1000000
+    allowed_game_types: ["blackjack", "poker", "baccarat"]

@@ -38,6 +38,8 @@ import {
   Bar,
 } from "recharts";
 import { useAuth } from "@/contexts/auth-context";
+import { useHydraContext } from "@/components/hydra/hydra-provider";
+import { HydraStatusIndicator } from "@/components/hydra/hydra-status-indicator";
 
 // Mock data for settlements
 const mockSettlements = [
@@ -116,6 +118,19 @@ const generateMockHydraData = () => {
 };
 
 export default function SettlementsPage() {
+  const {
+    isConnected,
+    isReady,
+    status,
+    error,
+    connect,
+    submitTransaction,
+    commitUtxos,
+    contest,
+    close,
+    refreshStatus,
+  } = useHydraContext();
+
   const [settlements, setSettlements] = useState(mockSettlements);
   const [filteredSettlements, setFilteredSettlements] =
     useState(mockSettlements);
@@ -204,8 +219,9 @@ export default function SettlementsPage() {
     setHydraStatus("committing");
     toast.info("Committing Hydra settlements to L1...");
 
-    // Simulate API call to commit settlements
-    setTimeout(() => {
+    try {
+      // In a real implementation, this would commit settlements to L1 using Hydra
+      await close(); // This would close the Hydra head and commit to L1
       setHydraStatus("committed");
       toast.success("Successfully committed settlements to Cardano L1!");
 
@@ -213,7 +229,11 @@ export default function SettlementsPage() {
       setTimeout(() => {
         setHydraStatus("active");
       }, 5000);
-    }, 3000);
+    } catch (err) {
+      console.error("Failed to commit settlements:", err);
+      toast.error("Failed to commit settlements to Cardano L1");
+      setHydraStatus("active");
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -285,6 +305,7 @@ export default function SettlementsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
+                  <HydraStatusIndicator showLabels={false} />
                   <div className="text-center">
                     <p className="text-2xl font-bold">{totalSettlements}</p>
                     <p className="text-blue-100 text-sm">Settlements</p>
@@ -406,7 +427,7 @@ export default function SettlementsPage() {
               <div className="mt-4 flex justify-end">
                 <Button
                   onClick={handleCommitToL1}
-                  disabled={hydraStatus === "committing"}
+                  disabled={hydraStatus === "committing" || !isReady}
                   className="bg-white text-blue-600 hover:bg-blue-50 flex items-center gap-2"
                 >
                   <Coins className="w-4 h-4" />

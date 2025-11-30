@@ -1,0 +1,15 @@
+network:
+  name: "preview"
+  id: 2
+  explorer_url: "https://preview.cexplorer.io"
+  blockfrost_url: "https://cardano-preview.blockfrost.io/api/v0"
+
+  transaction:
+    min_fee_a: 44
+    min_fee_b: 155381
+    pool_deposit: 500000000
+    key_deposit: 2000000
+
+  constraints:
+    max_tx_size: 16384
+    max_value_size: 5000

@@ -1,0 +1,25 @@
+# Hydra Development Configuration
+
+defaults:
+  - base
+  - _self_
+
+hydra:
+  host: "localhost"
+  port: 4000
+  api_port: 4001
+  network_id: 0 # Preprod
+
+  # Development-specific settings
+  head:
+    auto_commit_utxos: true
+    contestation_period_seconds: 60 # Shorter for development
+    snapshot_interval_seconds: 30 # More frequent snapshots
+
+  transaction:
+    timeout_seconds: 10 # Faster timeouts for development
+    max_retries: 2
+
+  logging:
+    level: "debug"
+    file: "logs/hydra-dev.log"

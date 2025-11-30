@@ -1,0 +1,33 @@
+# Hydra Production Configuration
+
+defaults:
+  - base
+  - _self_
+
+hydra:
+  host: "hydra.cardanocasino.com"
+  port: 4000
+  api_port: 4001
+  network_id: 1 # Mainnet
+
+  # Production-specific settings
+  head:
+    auto_commit_utxos: true
+    contestation_period_seconds: 3600 # 1 hour for production
+    snapshot_interval_seconds: 300 # 5 minutes
+
+  transaction:
+    timeout_seconds: 60 # Longer timeouts for production
+    max_retries: 5
+
+  security:
+    require_signature: true
+    validate_transactions: true
+    monitor_participants: true
+    alert_on_suspicious_activity: true
+
+  logging:
+    level: "info"
+    file: "logs/hydra-prod.log"
+    max_file_size_mb: 100
+    retention_days: 30

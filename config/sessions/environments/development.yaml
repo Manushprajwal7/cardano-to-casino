@@ -1,0 +1,7 @@
+environment:
+  name: "development"
+  log_level: "debug"
+  auto_close_after_hours: 168
+  max_log_entries: 10000
+  ui:
+    refresh_interval_seconds: 10

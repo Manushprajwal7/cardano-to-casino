@@ -22,13 +22,20 @@ import { Copy, Eye, Download } from "lucide-react";
 import Link from "next/link";
 
 interface Session {
-  sessionId: string;
-  cid: string;
-  timestamp: string;
-  amount: string;
-  result: string;
+  sessionId?: string;
+  cid?: string;
+  timestamp?: string;
+  amount?: string;
+  result?: string;
   playerWallet?: string;
   gameType?: string;
+  id?: string;
+  operator?: string;
+  tableId?: string;
+  startTime?: string;
+  endTime?: string | null;
+  merkleRoot?: string;
+  status?: string;
 }
 
 interface SessionsTableProps {
@@ -70,6 +77,33 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
   ];
 
   const sessionsData = sessions || mockSessions;
+
+  // Function to normalize session data for display
+  const normalizeSession = (session: Session) => {
+    // If it's the mock data from sessions page
+    if (session.id && session.operator) {
+      return {
+        sessionId: session.id,
+        cid:
+          session.merkleRoot ||
+          "0x" +
+            Math.random().toString(16).substr(2, 8) +
+            "..." +
+            Math.random().toString(16).substr(2, 4),
+        timestamp: session.startTime || new Date().toISOString(),
+        amount: `${Math.floor(Math.random() * 100) + 10} ADA`,
+        result: session.status || "settled",
+        playerWallet: `addr1q${Math.random()
+          .toString(16)
+          .substr(2, 8)}...${Math.random().toString(16).substr(2, 3)}`,
+        gameType: session.tableId
+          ? `table-${session.tableId.split("-")[1]}`
+          : "blackjack",
+      };
+    }
+    // If it's already in the correct format
+    return session;
+  };
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -126,62 +160,84 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sessionsData.map((session) => (
-                <TableRow key={session.sessionId} className="border-border">
-                  <TableCell className="font-medium text-primary">
-                    {session.sessionId}
-                  </TableCell>
-                  <TableCell className="flex items-center gap-2">
-                    <code className="text-xs bg-secondary px-2 py-1 rounded truncate max-w-[120px]">
-                      {session.cid.substring(0, 6)}...
-                      {session.cid.substring(session.cid.length - 4)}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => handleCopy(session.cid, session.sessionId)}
-                    >
-                      <Copy
-                        className={`w-3 h-3 ${
-                          copied === session.sessionId ? "text-green-500" : ""
-                        }`}
-                      />
-                    </Button>
-                  </TableCell>
-                  <TableCell>{session.amount}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusColors[session.result] as any}>
-                      {session.result}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link href={`/sessions/${session.sessionId}`}>
+              {sessionsData.map((session, index) => {
+                const normalizedSession = normalizeSession(session);
+                return (
+                  <TableRow
+                    key={normalizedSession.sessionId || index}
+                    className="border-border"
+                  >
+                    <TableCell className="font-medium text-primary">
+                      {normalizedSession.sessionId}
+                    </TableCell>
+                    <TableCell className="flex items-center gap-2">
+                      <code className="text-xs bg-secondary px-2 py-1 rounded truncate max-w-[120px]">
+                        {normalizedSession.cid?.substring(0, 6)}...
+                        {normalizedSession.cid?.substring(
+                          normalizedSession.cid.length - 4
+                        )}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() =>
+                          handleCopy(
+                            normalizedSession.cid || "",
+                            normalizedSession.sessionId || ""
+                          )
+                        }
+                      >
+                        <Copy
+                          className={`w-3 h-3 ${
+                            copied === normalizedSession.sessionId
+                              ? "text-green-500"
+                              : ""
+                          }`}
+                        />
+                      </Button>
+                    </TableCell>
+                    <TableCell>{normalizedSession.amount}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          statusColors[normalizedSession.result || ""] as any
+                        }
+                      >
+                        {normalizedSession.result}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/sessions/${normalizedSession.sessionId}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 bg-transparent"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span className="hidden sm:inline">View</span>
+                          </Button>
+                        </Link>
                         <Button
                           variant="outline"
                           size="sm"
                           className="gap-1 bg-transparent"
+                          onClick={() =>
+                            handleDownload(
+                              normalizedSession.cid || "",
+                              normalizedSession.sessionId || ""
+                            )
+                          }
                         >
-                          <Eye className="w-4 h-4" />
-                          <span className="hidden sm:inline">View</span>
+                          <Download className="w-4 h-4" />
+                          <span className="hidden sm:inline">Download</span>
                         </Button>
-                      </Link>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 bg-transparent"
-                        onClick={() =>
-                          handleDownload(session.cid, session.sessionId)
-                        }
-                      >
-                        <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">Download</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

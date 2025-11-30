@@ -1,0 +1,13 @@
+# Shared across all components
+defaults:
+  - _self_
+
+app:
+  name: "Cardano Casino Integrity SaaS"
+  version: "1.0.0"
+  environment: ${oc.env:NODE_ENV,development}
+
+cardano:
+  network: "preprod"
+  blockfrost_project_id: ${oc.env:BLOCKFROST_PROJECT_ID}
+  platform_fee_address: "addr_test1..."

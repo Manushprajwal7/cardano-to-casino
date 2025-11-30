@@ -1,0 +1,14 @@
+fees:
+  structure: "percentage"
+  percentage: 0.5
+  calculation:
+    formula: "amount * (percentage / 100)"
+    rounding: "ceil"
+
+  tiers:
+    - threshold: 0
+      percentage: 0.5
+    - threshold: 1000000000 # 1000 ADA
+      percentage: 0.4
+    - threshold: 10000000000 # 10000 ADA
+      percentage: 0.3

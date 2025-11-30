@@ -1,0 +1,6 @@
+currency:
+  code: "ADA"
+  name: "Cardano"
+  decimals: 6
+  symbol: "₳"
+  min_transaction_amount: 1000000 # 1 ADA in lovelace

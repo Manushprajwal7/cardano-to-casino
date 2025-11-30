@@ -1,0 +1,6 @@
+currency:
+  code: "EUR"
+  name: "Euro"
+  decimals: 2
+  symbol: "€"
+  min_transaction_amount: 100 # 1 EUR in cents

@@ -1,0 +1,30 @@
+defaults:
+  - base
+  - /settlements/fee-structures/standard
+  - /settlements/networks/preprod
+  - /settlements/currencies/ada
+  - _self_
+
+settlements:
+  # Transaction configuration
+  transaction:
+    timeout_minutes: 30
+    max_retries: 3
+    confirmation_blocks: 6
+
+  # Fee calculation
+  fee_calculation:
+    rounding: "up"
+    minimum_fee_lovelace: 1000000
+    fee_address: ${cardano.platform_fee_address}
+
+  # Batch processing
+  batch:
+    max_sessions_per_settlement: 100
+    auto_batch_threshold: 10
+
+  # UI settings
+  ui:
+    default_currency: "ADA"
+    show_lovelace: false
+    auto_refresh_status: true
