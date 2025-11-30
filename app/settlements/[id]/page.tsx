@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { MerkleTreeVisualizer } from "@/components/sessions/merkle-tree-visualizer";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 
 export default function SettlementSessionDetailsPage() {
   const params = useParams();
@@ -113,6 +114,7 @@ export default function SettlementSessionDetailsPage() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    toast.success("Copied to clipboard!");
   };
 
   const handleRecomputeMerkleRoot = async () => {
@@ -133,12 +135,15 @@ export default function SettlementSessionDetailsPage() {
         const refreshedData = await refreshResponse.json();
         if (refreshResponse.ok) {
           setSessionData(refreshedData);
+          toast.success("Merkle root recomputed successfully!");
         }
       } else {
         console.error("Failed to recompute Merkle root:", data.error);
+        toast.error("Failed to recompute Merkle root");
       }
     } catch (error) {
       console.error("Error recomputing Merkle root:", error);
+      toast.error("An error occurred while recomputing");
     } finally {
       setIsRecomputing(false);
     }
@@ -163,11 +168,14 @@ export default function SettlementSessionDetailsPage() {
       const data = await response.json();
       if (response.ok) {
         setProofData(data);
+        toast.success("Proof generated successfully!");
       } else {
         console.error("Failed to generate proof:", data.error);
+        toast.error("Failed to generate proof");
       }
     } catch (error) {
       console.error("Error generating proof:", error);
+      toast.error("An error occurred while generating proof");
     }
   };
 
@@ -188,19 +196,25 @@ export default function SettlementSessionDetailsPage() {
       const data = await response.json();
       if (response.ok) {
         setVerificationResult(data.verified ? "valid" : "invalid");
+        if (data.verified) {
+          toast.success("✅ Verification successful!");
+        } else {
+          toast.error("❌ Verification failed");
+        }
       } else {
         console.error("Failed to verify on-chain:", data.error);
+        toast.error("Failed to verify on-chain");
       }
     } catch (error) {
       console.error("Error verifying on-chain:", error);
+      toast.error("An error occurred during verification");
     } finally {
       setIsVerifying(false);
     }
   };
 
   const handleAttachSignature = async () => {
-    // In a real implementation, this would open a modal to collect the signature
-    console.log("Attach signature clicked");
+    toast.info("Signature attachment feature coming soon!");
   };
 
   const toggleLogExpansion = (index: number) => {
@@ -446,7 +460,27 @@ export default function SettlementSessionDetailsPage() {
             <Card className="bg-card border-border">
               <CardHeader className="flex items-center justify-between">
                 <CardTitle className="text-base">Session Logs</CardTitle>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const dataStr = JSON.stringify(
+                      { settlementId, logs, timestamp: new Date().toISOString() },
+                      null,
+                      2
+                    );
+                    const dataBlob = new Blob([dataStr], {
+                      type: "application/json",
+                    });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `settlement-logs-${settlementId}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    toast.success("Logs downloaded successfully!");
+                  }}
+                >
                   <Download className="w-4 h-4 mr-2" />
                   Download JSON
                 </Button>

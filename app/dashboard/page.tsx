@@ -9,6 +9,7 @@ import { FeesChart } from "@/components/dashboard/fees-chart";
 import { RecentActivityTable } from "@/components/dashboard/recent-activity-table";
 import { SystemStatusWidgets } from "@/components/dashboard/system-status";
 import { MempoolFeed } from "@/components/dashboard/mempool-feed";
+import { BlockchainVisualizer } from "@/components/dashboard/blockchain-visualizer";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { useBlockfrostData } from "@/hooks/use-blockfrost-data";
 
@@ -132,6 +133,9 @@ export default function DashboardPage() {
             />
           </div>
 
+          {/* Blockchain Visualizer */}
+          <BlockchainVisualizer />
+
           {/* Charts and Live Feed */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2 space-y-4">
@@ -141,7 +145,7 @@ export default function DashboardPage() {
               </div>
               <RecentActivityTable transactions={transactions} />
             </div>
-            <div className="space-y-4">
+            < div className="space-y-4">
               <MempoolFeed />
               <SystemStatusWidgets healthData={health} />
             </div>

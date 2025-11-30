@@ -24,6 +24,7 @@ import {
 import { Search, Filter, Download, Eye } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import Link from "next/link";
+import { toast } from "sonner";
 
 // Mock data for settlements
 const mockSettlements = [
@@ -112,13 +113,34 @@ export default function SettlementsPage() {
   }, [searchTerm, statusFilter, gameFilter]);
 
   const handleViewTransaction = (hash: string) => {
-    // In a real implementation, this would open a transaction viewer
-    console.log("Viewing transaction:", hash);
+    window.open(`https://preprod.cardanoscan.io/transaction/${hash}`, "_blank");
+    toast.success("Opening transaction in CardanoScan");
   };
 
   const handleDownloadReport = () => {
-    // In a real implementation, this would generate and download a report
-    console.log("Downloading settlement report");
+    const csv = [
+      ["ID", "Transaction Hash", "Amount", "Date", "Status", "Player Wallet", "Game Type"],
+      ...filteredSettlements.map((s) => [
+        s.id,
+        s.transactionHash,
+        s.amount,
+        new Date(s.timestamp).toISOString(),
+        s.status,
+        s.playerWallet,
+        s.gameType,
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `settlements-report-${new Date().toISOString()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Settlement report downloaded successfully!");
   };
 
   const getStatusBadge = (status: string) => {

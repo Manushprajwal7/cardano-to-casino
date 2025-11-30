@@ -45,6 +45,7 @@ import {
   buildSettlementTransaction,
   submitTransaction,
 } from "@/lib/lucid-utils";
+import { MerkleTree3DExplorer } from "@/components/audit/merkle-tree-3d";
 import { toast } from "sonner";
 
 export default function AuditPage() {
@@ -75,8 +76,8 @@ export default function AuditPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Handle audit search
-  const handleAuditSearch = async () => {
-    const query = searchQuery.trim();
+  const handleAuditSearch = async (q?: string) => {
+    const query = (q ?? searchQuery).trim();
     if (!query) {
       toast.error("Please enter a search term");
       return;
@@ -688,8 +689,13 @@ Generated on: ${new Date().toLocaleString()}
                     }
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleAuditSearch(searchTerm)
+                    }
                   />
-                  <Button>Search</Button>
+                  <Button onClick={() => handleAuditSearch(searchTerm)}>
+                    Search
+                  </Button>
                 </div>
               </div>
             </div>
@@ -697,12 +703,18 @@ Generated on: ${new Date().toLocaleString()}
         </Card>
 
         <Tabs defaultValue="verify" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="verify">Verify Proof</TabsTrigger>
+            <TabsTrigger value="3d-tree">3D Merkle Tree</TabsTrigger>
             <TabsTrigger value="history">Verification History</TabsTrigger>
             <TabsTrigger value="settlements">Settlements</TabsTrigger>
             <TabsTrigger value="audit">Audit & Proofs</TabsTrigger>
           </TabsList>
+
+          {/* 3D Merkle Tree Tab */}
+          <TabsContent value="3d-tree">
+            <MerkleTree3DExplorer />
+          </TabsContent>
 
           {/* Verify Proof Tab */}
           <TabsContent value="verify">
@@ -787,8 +799,14 @@ Generated on: ${new Date().toLocaleString()}
                 </div>
 
                 <div className="flex gap-2">
-                  <Button className="flex-1">Verify Proof</Button>
-                  <Button variant="outline" className="flex-1 bg-transparent">
+                  <Button className="flex-1" onClick={handleVerifyProof}>
+                    Verify Proof
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-transparent"
+                    onClick={handleViewOnBlockfrost}
+                  >
                     View on Blockfrost
                   </Button>
                 </div>
@@ -824,24 +842,32 @@ Generated on: ${new Date().toLocaleString()}
                         verified: true,
                         operator: "Casino A",
                         time: "2024-01-15 14:32",
+                        txHash:
+                          "7f192ffa95992f888b06353688ab9b1df32be4ede5c6476bc86a8369ee640b13",
                       },
                       {
                         id: "SES-002",
                         verified: true,
                         operator: "Casino B",
                         time: "2024-01-15 13:15",
+                        txHash:
+                          "a1b2c3d4e5f67890123456789012345678901234567890123456789012345678",
                       },
                       {
                         id: "SES-003",
                         verified: false,
                         operator: "Casino C",
                         time: "2024-01-15 12:45",
+                        txHash:
+                          "b2a1c3d4e5f67890123456789012345678901234567890123456789012345679",
                       },
                       {
                         id: "SES-004",
                         verified: true,
                         operator: "Casino A",
                         time: "2024-01-15 11:20",
+                        txHash:
+                          "c3b2a1d4e5f67890123456789012345678901234567890123456789012345670",
                       },
                     ].map((item) => (
                       <TableRow key={item.id}>
@@ -868,7 +894,12 @@ Generated on: ${new Date().toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="ghost">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => viewOnExplorer(item.txHash)}
+                              title="View on Blockfrost"
+                            >
                               <ExternalLink className="w-4 h-4" />
                             </Button>
                           </div>

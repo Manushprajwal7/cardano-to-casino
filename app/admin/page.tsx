@@ -39,8 +39,9 @@ import {
   Download,
   ExternalLink,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-const revenueData = [
+const revenueDataStatic = [
   { casino: "Casino A", revenue: 5200, fees: 520 },
   { casino: "Casino B", revenue: 3800, fees: 380 },
   { casino: "Casino C", revenue: 2800, fees: 280 },
@@ -105,6 +106,60 @@ export default function AdminPage() {
   const [isLoadingValidators, setIsLoadingValidators] = useState(false);
   const [isLoadingWallet, setIsLoadingWallet] = useState(false);
   const [timeRange, setTimeRange] = useState("daily");
+
+  // Add alerts state for System Alerts
+  const [alerts, setAlerts] = useState(alertsData);
+  // Add Next.js router for navigation actions
+  const router = useRouter();
+
+  // Admin actions
+  const handleManageWallet = () => {
+    router.push("/settings");
+  };
+
+  const handleReviewDispute = (dispute: { id: string }) => {
+    router.push(
+      `/admin/fraud-detection?dispute=${encodeURIComponent(dispute.id)}`
+    );
+  };
+
+  const handleVerifyDisputeProof = (dispute: { id: string }) => {
+    router.push(
+      `/audit?searchType=session&q=${encodeURIComponent(dispute.id)}`
+    );
+  };
+
+  const exportToCSV = (filename: string, rows: any[]) => {
+    if (!rows || rows.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+    const header = Object.keys(rows[0]);
+    const csvRows = [header.join(",")].concat(
+      rows.map((r) => header.map((h) => JSON.stringify(r[h] ?? "")).join(","))
+    );
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleExportRevenueCSV = () => {
+    exportToCSV(`revenue_${timeRange}.csv`, revenueDataStatic);
+  };
+
+  const handleExportUtxosCSV = () => {
+    exportToCSV("utxos.csv", utxoData);
+  };
+
+  const handleDismissAlert = (id: number) => {
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+  };
 
   // Fetch current fee configuration
   useEffect(() => {
@@ -367,7 +422,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <Button>Manage Wallet</Button>
+                <Button onClick={handleManageWallet}>Manage Wallet</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -504,7 +559,11 @@ export default function AdminPage() {
                       Per-casino settlement and fee breakdown
                     </CardDescription>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportRevenueCSV}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Export CSV
                   </Button>
@@ -512,7 +571,7 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={revenueData}>
+                  <BarChart data={revenueDataStatic}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="casino" />
                     <YAxis />
@@ -551,7 +610,11 @@ export default function AdminPage() {
                         </TableCell>
                         <TableCell>24</TableCell>
                         <TableCell>
-                          <Button size="sm" variant="ghost">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleExportRevenueCSV}
+                          >
                             View Details
                           </Button>
                         </TableCell>
@@ -611,9 +674,20 @@ export default function AdminPage() {
                           <TableCell className="text-sm text-muted-foreground">
                             {dispute.date}
                           </TableCell>
-                          <TableCell>
-                            <Button size="sm" variant="outline">
+                          <TableCell className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleReviewDispute(dispute)}
+                            >
                               Review
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleVerifyDisputeProof(dispute)}
+                            >
+                              Verify Proof
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -636,7 +710,7 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {alertsData.map((alert) => (
+                    {alerts.map((alert) => (
                       <div
                         key={alert.id}
                         className="border border-border rounded-lg p-3 flex items-start gap-3"
@@ -663,7 +737,11 @@ export default function AdminPage() {
                             {alert.timestamp}
                           </p>
                         </div>
-                        <Button size="sm" variant="ghost">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDismissAlert(alert.id)}
+                        >
                           Dismiss
                         </Button>
                       </div>
@@ -705,19 +783,7 @@ export default function AdminPage() {
                           UTXO Count
                         </p>
                         <p className="text-2xl font-bold">
-                          {walletBalance.utxoCount}
-                        </p>
-                      </div>
-                      <div className="border border-border rounded-lg p-4">
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Last Updated
-                        </p>
-                        <p className="text-sm">
-                          {walletBalance?.lastUpdated
-                            ? new Date(
-                                walletBalance.lastUpdated
-                              ).toLocaleString()
-                            : "N/A"}
+                          {walletBalance.utxo_count}
                         </p>
                       </div>
                       <div className="border border-border rounded-lg p-4">
@@ -771,7 +837,11 @@ export default function AdminPage() {
                       >
                         Monthly
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportRevenueCSV}
+                      >
                         <Download className="w-4 h-4 mr-2" />
                         Export CSV
                       </Button>
@@ -830,7 +900,11 @@ export default function AdminPage() {
                           Live table of wallet UTXOs
                         </CardDescription>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportUtxosCSV}
+                      >
                         <Download className="w-4 h-4 mr-2" />
                         Export CSV
                       </Button>
@@ -904,43 +978,16 @@ export default function AdminPage() {
                         Loading validator data...
                       </div>
                     ) : validatorData.length > 0 ? (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Validator</TableHead>
-                            <TableHead>TX Count</TableHead>
-                            <TableHead>Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {validatorData.map((validator, index) => (
-                            <TableRow key={index}>
-                              <TableCell className="font-mono text-xs">
-                                {validator.validator}
-                              </TableCell>
-                              <TableCell>{validator.txCount}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    validator.txCount > 40
-                                      ? "default"
-                                      : "secondary"
-                                  }
-                                  className={
-                                    validator.txCount > 40
-                                      ? "bg-green-500/10 text-green-500 border-green-500/20"
-                                      : ""
-                                  }
-                                >
-                                  {validator.txCount > 40
-                                    ? "Healthy"
-                                    : "Low Activity"}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={validatorData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="validator" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="transactions" fill="#8b5cf6" />
+                        </BarChart>
+                      </ResponsiveContainer>
                     ) : (
                       <div className="text-center py-4 text-muted-foreground">
                         No validator data available
@@ -949,175 +996,6 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Fee Governance */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Fee Governance</CardTitle>
-                  <CardDescription>
-                    Adjust platform fee settings
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">
-                        Platform Fee Percentage (%)
-                      </label>
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={feePercentage}
-                          onChange={(e) =>
-                            setFeePercentage(Number.parseFloat(e.target.value))
-                          }
-                          className="max-w-32"
-                        />
-                        <span className="text-sm text-muted-foreground py-2">
-                          Current: {feePercentage}%
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Applied to all settlements
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">
-                        Minimum Fee (ADA)
-                      </label>
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={minFee}
-                          onChange={(e) =>
-                            setMinFee(Number.parseFloat(e.target.value))
-                          }
-                          className="max-w-32"
-                        />
-                        <span className="text-sm text-muted-foreground py-2">
-                          Current: {minFee} ADA
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Minimum fee for any settlement
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium">
-                        Maximum Fee (ADA)
-                      </label>
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={maxFee}
-                          onChange={(e) =>
-                            setMaxFee(Number.parseFloat(e.target.value))
-                          }
-                          className="max-w-32"
-                        />
-                        <span className="text-sm text-muted-foreground py-2">
-                          Current: {maxFee} ADA
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Maximum fee for any settlement
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={async () => {
-                        setIsSaving(true);
-                        try {
-                          const response = await fetch(
-                            "/api/admin/blockfrost",
-                            {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                              },
-                              body: JSON.stringify({
-                                action: "update-fee-config",
-                                feePercentage: feePercentage,
-                                minFee: minFee,
-                                maxFee: maxFee,
-                              }),
-                            }
-                          );
-
-                          if (response.ok) {
-                            alert("Fee configuration updated successfully!");
-                          } else {
-                            const error = await response.json();
-                            alert(`Error: ${error.error}`);
-                          }
-                        } catch (error) {
-                          console.error(
-                            "Failed to update fee configuration:",
-                            error
-                          );
-                          alert("Failed to update fee configuration");
-                        } finally {
-                          setIsSaving(false);
-                        }
-                      }}
-                      disabled={isSaving}
-                    >
-                      {isSaving ? "Saving..." : "Save Configuration"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setFeePercentage(1.0);
-                        setMinFee(0.5);
-                        setMaxFee(100.0);
-                      }}
-                    >
-                      Reset to Defaults
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          const response = await fetch(
-                            "/api/admin/blockfrost",
-                            {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                              },
-                              body: JSON.stringify({
-                                action: "trigger-audit",
-                              }),
-                            }
-                          );
-
-                          if (response.ok) {
-                            const result = await response.json();
-                            alert(
-                              `Audit report generation triggered! Report ID: ${result.reportId}`
-                            );
-                          } else {
-                            const error = await response.json();
-                            alert(`Error: ${error.error}`);
-                          }
-                        } catch (error) {
-                          console.error("Failed to trigger audit:", error);
-                          alert("Failed to trigger audit report generation");
-                        }
-                      }}
-                    >
-                      Generate Audit Report
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
         </Tabs>
