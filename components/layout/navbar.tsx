@@ -35,6 +35,249 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 
+// Cute Lobster SVG Component
+function WalkingLobster() {
+  return (
+    <div className="absolute top-0 left-0 w-full h-16 pointer-events-none overflow-hidden z-50">
+      <div className="lobster-walk">
+        <svg
+          width="60"
+          height="50"
+          viewBox="0 0 60 50"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="lobster-svg"
+        >
+          {/* Body */}
+          <ellipse cx="30" cy="28" rx="12" ry="8" fill="#E63946" />
+
+          {/* Tail segments */}
+          <ellipse cx="42" cy="28" rx="6" ry="5" fill="#DC2F3D" />
+          <ellipse cx="48" cy="28" rx="4" ry="4" fill="#C52834" />
+          <path
+            d="M50 26 L55 22 L54 28 L55 34 L50 30"
+            fill="#E63946"
+            className="tail-fan"
+          />
+
+          {/* Head */}
+          <ellipse cx="20" cy="26" rx="6" ry="7" fill="#E63946" />
+
+          {/* Eyes */}
+          <circle cx="18" cy="23" r="2" fill="#1A1A1A" />
+          <circle cx="18" cy="23" r="1" fill="#FFFFFF" />
+          <circle cx="22" cy="23" r="2" fill="#1A1A1A" />
+          <circle cx="22" cy="23" r="1" fill="#FFFFFF" />
+
+          {/* Antennae */}
+          <path
+            d="M18 20 Q16 15 14 12"
+            stroke="#C52834"
+            strokeWidth="1.5"
+            fill="none"
+            className="antenna-left"
+          />
+          <path
+            d="M22 20 Q24 15 26 12"
+            stroke="#C52834"
+            strokeWidth="1.5"
+            fill="none"
+            className="antenna-right"
+          />
+
+          {/* Claws */}
+          <g className="claw-left">
+            <ellipse cx="16" cy="30" rx="3" ry="4" fill="#E63946" />
+            <path
+              d="M14 32 L10 35 Q8 36 9 37 L11 36 Q10 35 12 34 Z"
+              fill="#DC2F3D"
+            />
+            <path
+              d="M14 32 L10 29 Q8 28 9 27 L11 28 Q10 29 12 30 Z"
+              fill="#DC2F3D"
+            />
+          </g>
+
+          <g className="claw-right">
+            <ellipse cx="24" cy="30" rx="3" ry="4" fill="#E63946" />
+            <path
+              d="M26 32 L30 35 Q32 36 31 37 L29 36 Q30 35 28 34 Z"
+              fill="#DC2F3D"
+            />
+            <path
+              d="M26 32 L30 29 Q32 28 31 27 L29 28 Q30 29 28 30 Z"
+              fill="#DC2F3D"
+            />
+          </g>
+
+          {/* Walking legs */}
+          <g className="legs">
+            <line
+              x1="25"
+              y1="32"
+              x2="23"
+              y2="38"
+              stroke="#C52834"
+              strokeWidth="2"
+              className="leg1"
+            />
+            <line
+              x1="28"
+              y1="32"
+              x2="27"
+              y2="38"
+              stroke="#C52834"
+              strokeWidth="2"
+              className="leg2"
+            />
+            <line
+              x1="31"
+              y1="32"
+              x2="31"
+              y2="38"
+              stroke="#C52834"
+              strokeWidth="2"
+              className="leg3"
+            />
+            <line
+              x1="34"
+              y1="32"
+              x2="35"
+              y2="38"
+              stroke="#C52834"
+              strokeWidth="2"
+              className="leg4"
+            />
+          </g>
+        </svg>
+      </div>
+
+      <style jsx>{`
+        .lobster-walk {
+          position: absolute;
+          top: 8px;
+          animation: walk 15s linear infinite;
+        }
+
+        @keyframes walk {
+          0% {
+            left: -80px;
+          }
+          100% {
+            left: calc(100% + 80px);
+          }
+        }
+
+        .lobster-svg {
+          animation: bounce 0.5s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+          0%,
+          100% {
+            transform: translateY(0) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-3px) rotate(2deg);
+          }
+        }
+
+        .antenna-left {
+          animation: wiggle-left 0.6s ease-in-out infinite;
+          transform-origin: 18px 20px;
+        }
+
+        .antenna-right {
+          animation: wiggle-right 0.6s ease-in-out infinite;
+          transform-origin: 22px 20px;
+        }
+
+        @keyframes wiggle-left {
+          0%,
+          100% {
+            transform: rotate(-5deg);
+          }
+          50% {
+            transform: rotate(5deg);
+          }
+        }
+
+        @keyframes wiggle-right {
+          0%,
+          100% {
+            transform: rotate(5deg);
+          }
+          50% {
+            transform: rotate(-5deg);
+          }
+        }
+
+        .tail-fan {
+          animation: fan 0.4s ease-in-out infinite;
+          transform-origin: 50px 28px;
+        }
+
+        @keyframes fan {
+          0%,
+          100% {
+            transform: scaleX(1);
+          }
+          50% {
+            transform: scaleX(1.2);
+          }
+        }
+
+        .leg1 {
+          animation: leg-move 0.4s ease-in-out infinite;
+        }
+
+        .leg2 {
+          animation: leg-move 0.4s ease-in-out infinite 0.1s;
+        }
+
+        .leg3 {
+          animation: leg-move 0.4s ease-in-out infinite 0.2s;
+        }
+
+        .leg4 {
+          animation: leg-move 0.4s ease-in-out infinite 0.3s;
+        }
+
+        @keyframes leg-move {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-2px);
+          }
+        }
+
+        .claw-left {
+          animation: claw-snap 1s ease-in-out infinite;
+          transform-origin: 16px 30px;
+        }
+
+        .claw-right {
+          animation: claw-snap 1s ease-in-out infinite 0.5s;
+          transform-origin: 24px 30px;
+        }
+
+        @keyframes claw-snap {
+          0%,
+          90%,
+          100% {
+            transform: rotate(0deg);
+          }
+          95% {
+            transform: rotate(-10deg);
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export function Navbar() {
   const { wallet, connected, connecting } = useWallet();
   const router = useRouter();
@@ -49,7 +292,10 @@ export function Navbar() {
   };
 
   return (
-    <nav className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
+    <nav className="h-16 bg-card border-b border-border flex items-center justify-between px-6 relative">
+      {/* Walking Lobster Animation */}
+      <WalkingLobster />
+
       <div className="flex items-center gap-4">
         <h1 className="text-lg font-semibold">Dashboard</h1>
       </div>
@@ -70,7 +316,6 @@ export function Navbar() {
           className="gap-2 bg-transparent"
           onClick={() => {
             if (!connected) {
-              // In a real implementation, this would open the wallet connector modal
               console.log("Open wallet connector");
             }
           }}
@@ -230,14 +475,7 @@ export function Navbar() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
-                // In a real implementation, this would handle actual logout logic
-                // such as clearing auth tokens, resetting state, etc.
-                // For now, we'll show a toast and redirect to login
                 toast.success("You have been logged out successfully!");
-                // Clear any stored authentication data
-                localStorage.removeItem("authToken");
-                sessionStorage.clear();
-                // Redirect to login page
                 router.push("/login");
               }}
             >

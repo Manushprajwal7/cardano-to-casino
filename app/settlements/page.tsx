@@ -21,10 +21,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Download, Eye } from "lucide-react";
+import { Search, Filter, Download, Eye, Zap, Coins } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import Link from "next/link";
 import { toast } from "sonner";
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
+import { useAuth } from "@/contexts/auth-context";
 
 // Mock data for settlements
 const mockSettlements = [
@@ -80,6 +93,28 @@ const mockSettlements = [
   },
 ];
 
+// Mock data for Hydra settlements
+const generateMockHydraData = () => {
+  const data = [];
+  const now = new Date();
+
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+
+    data.push({
+      date: date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      settlements: Math.floor(Math.random() * 50) + 10, // 10-60 settlements per day
+      volume: Math.floor(Math.random() * 10000) + 1000, // 1000-11000 ADA volume
+    });
+  }
+
+  return data;
+};
+
 export default function SettlementsPage() {
   const [settlements, setSettlements] = useState(mockSettlements);
   const [filteredSettlements, setFilteredSettlements] =
@@ -87,6 +122,20 @@ export default function SettlementsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [gameFilter, setGameFilter] = useState("all");
+  const [hydraData, setHydraData] = useState(generateMockHydraData());
+  const [hydraStatus, setHydraStatus] = useState("active"); // active, committing, committed
+  const [feePercentage] = useState(1); // 1% fee
+  const [showSettlementLoader, setShowSettlementLoader] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    // Show settlement loader for 3.5 seconds
+    const timer = setTimeout(() => {
+      setShowSettlementLoader(false);
+    }, 3500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     // In a real implementation, this would fetch from an API
@@ -119,7 +168,15 @@ export default function SettlementsPage() {
 
   const handleDownloadReport = () => {
     const csv = [
-      ["ID", "Transaction Hash", "Amount", "Date", "Status", "Player Wallet", "Game Type"],
+      [
+        "ID",
+        "Transaction Hash",
+        "Amount",
+        "Date",
+        "Status",
+        "Player Wallet",
+        "Game Type",
+      ],
       ...filteredSettlements.map((s) => [
         s.id,
         s.transactionHash,
@@ -143,6 +200,22 @@ export default function SettlementsPage() {
     toast.success("Settlement report downloaded successfully!");
   };
 
+  const handleCommitToL1 = async () => {
+    setHydraStatus("committing");
+    toast.info("Committing Hydra settlements to L1...");
+
+    // Simulate API call to commit settlements
+    setTimeout(() => {
+      setHydraStatus("committed");
+      toast.success("Successfully committed settlements to Cardano L1!");
+
+      // Reset status after a delay
+      setTimeout(() => {
+        setHydraStatus("active");
+      }, 5000);
+    }, 3000);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -156,6 +229,35 @@ export default function SettlementsPage() {
     }
   };
 
+  // Calculate total settlements and volume for display
+  const totalSettlements = hydraData.reduce(
+    (sum, day) => sum + day.settlements,
+    0
+  );
+  const totalVolume = hydraData.reduce((sum, day) => sum + day.volume, 0);
+  const platformFees = totalVolume * (feePercentage / 100);
+
+  if (showSettlementLoader) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <img
+            src="/settlement_loader.jpg"
+            alt="Settlements Loader"
+            className="mx-auto mb-4 rounded-lg shadow-lg"
+            style={{ maxWidth: "400px", height: "auto" }}
+          />
+          <p className="text-muted-foreground">Loading settlements data...</p>
+          {user?.email && (
+            <p className="text-muted-foreground text-sm mt-2">
+              Welcome, {user.email}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <div className="flex-1 overflow-auto">
@@ -167,6 +269,161 @@ export default function SettlementsPage() {
               View and manage transaction settlements
             </p>
           </div>
+
+          {/* Hydra Fast Mode Section */}
+          <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Zap className="w-6 h-6" />
+                    Hydra Fast Mode
+                  </CardTitle>
+                  <p className="text-blue-100 mt-1">
+                    Instant micro-settlements with batch finalization to Cardano
+                    L1
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">{totalSettlements}</p>
+                    <p className="text-blue-100 text-sm">Settlements</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">
+                      {totalVolume.toLocaleString()} ADA
+                    </p>
+                    <p className="text-blue-100 text-sm">Volume</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold">
+                      {platformFees.toFixed(2)} ADA
+                    </p>
+                    <p className="text-blue-100 text-sm">Platform Fees (1%)</p>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Settlements Chart */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                  <h3 className="font-medium mb-2">Daily Settlements</h3>
+                  <ChartContainer
+                    config={{
+                      settlements: {
+                        label: "Settlements",
+                        color: "hsl(180, 100%, 50%)",
+                      },
+                    }}
+                    className="h-[200px] w-full"
+                  >
+                    <div className="h-full w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={hydraData}
+                          margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="rgba(255,255,255,0.2)"
+                          />
+                          <XAxis
+                            dataKey="date"
+                            stroke="rgba(255,255,255,0.7)"
+                            tickMargin={10}
+                            tick={{ fontSize: 10 }}
+                          />
+                          <YAxis
+                            stroke="rgba(255,255,255,0.7)"
+                            tickMargin={10}
+                            tick={{ fontSize: 10 }}
+                            width={30}
+                          />
+                          <Tooltip content={<ChartTooltipContent />} />
+                          <Bar
+                            dataKey="settlements"
+                            fill="var(--color-settlements)"
+                            radius={[4, 4, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </ChartContainer>
+                </div>
+
+                {/* Volume Chart */}
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                  <h3 className="font-medium mb-2">Daily Volume (ADA)</h3>
+                  <ChartContainer
+                    config={{
+                      volume: {
+                        label: "Volume (ADA)",
+                        color: "hsl(50, 100%, 50%)",
+                      },
+                    }}
+                    className="h-[200px] w-full"
+                  >
+                    <div className="h-full w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={hydraData}
+                          margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="rgba(255,255,255,0.2)"
+                          />
+                          <XAxis
+                            dataKey="date"
+                            stroke="rgba(255,255,255,0.7)"
+                            tickMargin={10}
+                            tick={{ fontSize: 10 }}
+                          />
+                          <YAxis
+                            stroke="rgba(255,255,255,0.7)"
+                            tickMargin={10}
+                            tick={{ fontSize: 10 }}
+                            width={40}
+                          />
+                          <Tooltip content={<ChartTooltipContent />} />
+                          <Line
+                            type="monotone"
+                            dataKey="volume"
+                            stroke="var(--color-volume)"
+                            dot={false}
+                            strokeWidth={2}
+                            activeDot={{ r: 6 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </ChartContainer>
+                </div>
+              </div>
+
+              {/* Commit to L1 Button */}
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={handleCommitToL1}
+                  disabled={hydraStatus === "committing"}
+                  className="bg-white text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                >
+                  <Coins className="w-4 h-4" />
+                  {hydraStatus === "committing"
+                    ? "Committing..."
+                    : "Commit to L1"}
+                </Button>
+              </div>
+
+              {hydraStatus === "committed" && (
+                <div className="mt-3 text-center text-green-300 text-sm">
+                  Successfully committed to Cardano L1! Transaction hash:
+                  tx_abc123...
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Filters and Controls */}
           <Card className="bg-card border-border">

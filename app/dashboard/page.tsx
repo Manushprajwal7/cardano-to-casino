@@ -12,9 +12,12 @@ import { MempoolFeed } from "@/components/dashboard/mempool-feed";
 import { BlockchainVisualizer } from "@/components/dashboard/blockchain-visualizer";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { useBlockfrostData } from "@/hooks/use-blockfrost-data";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [showAuthLoader, setShowAuthLoader] = useState(false);
+  const { user } = useAuth();
 
   // Fetch data from our API endpoints
   const {
@@ -35,6 +38,18 @@ export default function DashboardPage() {
     error: healthError,
     refetch: refetchHealth,
   } = useBlockfrostData("health");
+
+  useEffect(() => {
+    // Show auth loader when user logs in
+    if (user?.email) {
+      setShowAuthLoader(true);
+      const timer = setTimeout(() => {
+        setShowAuthLoader(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [user?.email]);
 
   const handleManualRefresh = () => {
     refetchTransactions();
@@ -79,6 +94,22 @@ export default function DashboardPage() {
       : confirmationTimeStatus === "slow"
       ? "down"
       : "down";
+
+  if (showAuthLoader) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <img
+            src="/auth_loder.jpg"
+            alt="Authentication Loader"
+            className="mx-auto mb-4 rounded-lg shadow-lg"
+            style={{ maxWidth: "400px", height: "auto" }}
+          />
+          <p className="text-muted-foreground">Welcome, {user?.email}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -145,7 +176,7 @@ export default function DashboardPage() {
               </div>
               <RecentActivityTable transactions={transactions} />
             </div>
-            < div className="space-y-4">
+            <div className="space-y-4">
               <MempoolFeed />
               <SystemStatusWidgets healthData={health} />
             </div>

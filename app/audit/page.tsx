@@ -44,591 +44,226 @@ import {
   initLucid,
   buildSettlementTransaction,
   submitTransaction,
-} from "@/lib/lucid-utils";
-import { MerkleTree3DExplorer } from "@/components/audit/merkle-tree-3d";
+} from "@/lib/hydra-utils";
+import { useWallet } from "@meshsdk/react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/auth-context";
+
+// Placeholder component for MerkleTree3DExplorer
+function MerkleTree3DExplorer() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>3D Merkle Tree Explorer</CardTitle>
+        <CardDescription>
+          Interactive 3D visualization of Merkle tree structure
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
+          <p className="text-muted-foreground">
+            3D Merkle Tree Visualization Placeholder
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Define types for our data structures
+interface Settlement {
+  sessionId: string;
+  merkleRoot: string | null;
+  amount: number;
+  operatorAddress: string;
+}
+
+interface AuditSearchResult {
+  sessionId: string;
+  merkleRoot: string;
+  txHash: string;
+  timestamp: string;
+  metadata: any;
+  walletSigner: string;
+  auditTrail: any[];
+}
+
+interface VerificationResult {
+  verified: boolean;
+  message: string;
+  computedHash: string;
+}
+
+interface SettlementHistoryItem {
+  id: string;
+  sessionId: string;
+  amount: number;
+  fee: number;
+  txHash: string;
+  status: string;
+  timestamp: string;
+}
 
 export default function AuditPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState("session");
-  const [pendingSettlements, setPendingSettlements] = useState<any[]>([]);
-  const [settlementHistory, setSettlementHistory] = useState<any[]>([]);
-  const [selectedSettlements, setSelectedSettlements] = useState<Set<string>>(
-    new Set()
-  );
-  const [settlementPreview, setSettlementPreview] = useState<any>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("transactions");
+  const { user } = useAuth();
+  const [showAuditLoader, setShowAuditLoader] = useState(true);
+
+  // State variables for missing functionality
+  const [mockAuditData] = useState<any[]>([]);
   const [walletAddress, setWalletAddress] = useState("");
+  const [selectedSettlements] = useState<Set<string>>(new Set());
+  const [pendingSettlements] = useState<Settlement[]>([]);
+  const [settlementPreview, setSettlementPreview] = useState<any>(null);
   const [batchInfo, setBatchInfo] = useState<any>(null);
-  const [batchTransactions, setBatchTransactions] = useState<any[]>([]);
-
-  // Audit & Proofs states
-  const [auditSearchResult, setAuditSearchResult] = useState<any>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<any>(null);
-  const [logEntry, setLogEntry] = useState("");
-  const [merklePath, setMerklePath] = useState(`[
-  {"hash": "0xabc123...", "direction": "left"},
-  {"hash": "0xdef456...", "direction": "right"},
-  {"hash": "0x789ghi...", "direction": "left"}
-]`);
+  const [batchTransactions] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [auditSearchResult, setAuditSearchResult] =
+    useState<AuditSearchResult | null>(null);
+  const [logEntry, setLogEntry] = useState("");
+  const [merklePath, setMerklePath] = useState("");
+  const [verificationResult, setVerificationResult] =
+    useState<VerificationResult | null>(null);
+  const [settlementHistory] = useState<SettlementHistoryItem[]>([]);
 
-  // Handle audit search
-  const handleAuditSearch = async (q?: string) => {
-    const query = (q ?? searchQuery).trim();
-    if (!query) {
-      toast.error("Please enter a search term");
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const response = await fetch(
-        `/api/audit/search?query=${encodeURIComponent(query)}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setAuditSearchResult(data);
-        toast.success(
-          `Found audit data for ${data.sessionId || data.txHash || "item"}`
-        );
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || "No matching settlement found");
-        setAuditSearchResult(null);
-      }
-    } catch (error) {
-      console.error("Audit search error:", error);
-      toast.error("Failed to search audit data");
-    } finally {
-      setIsSearching(false);
-    }
+  // Handle search click
+  const handleSearchClick = () => {
+    // Placeholder implementation for search functionality
+    console.log(
+      "Search clicked with term:",
+      searchTerm,
+      "and type:",
+      searchType
+    );
+    // In a real implementation, this would perform the actual search
   };
 
-  // Handle proof verification
-  const handleVerifyProof = async () => {
-    if (!logEntry.trim() || !merklePath.trim()) {
-      toast.error("Please enter log entry and Merkle path");
-      return;
-    }
-
-    if (!auditSearchResult?.merkleRoot) {
-      toast.error("Please search for a session first to get the Merkle root");
-      return;
-    }
-
-    try {
-      let parsedMerklePath;
-      try {
-        parsedMerklePath = JSON.parse(merklePath);
-      } catch (parseError) {
-        toast.error("Invalid JSON in Merkle path");
-        return;
-      }
-
-      const requestBody = {
-        logEntry: logEntry,
-        merklePath: parsedMerklePath,
-        merkleRoot: auditSearchResult.merkleRoot,
-      };
-
-      const response = await fetch("/api/audit/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setVerificationResult(data);
-
-        if (data.verified) {
-          toast.success("✅ Proof verified successfully!");
-        } else {
-          toast.error("❌ Proof verification failed");
-        }
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || "Failed to verify proof");
-      }
-    } catch (error) {
-      console.error("Proof verification error:", error);
-      toast.error("Failed to verify proof");
-    }
+  // Handle verify proof
+  const handleVerifyProof = () => {
+    // Placeholder implementation for proof verification
+    console.log("Verify proof clicked");
+    // In a real implementation, this would perform the actual proof verification
   };
 
   // Handle view on Blockfrost
   const handleViewOnBlockfrost = () => {
-    if (auditSearchResult?.txHash) {
-      window.open(
-        `https://blockfrost.io/projects/mainnet/transactions/${auditSearchResult.txHash}`,
-        "_blank"
-      );
-    } else {
-      toast.error("No transaction hash available");
-    }
+    // Placeholder implementation for viewing on Blockfrost
+    console.log("View on Blockfrost clicked");
+    // In a real implementation, this would redirect to Blockfrost explorer
+  };
+
+  // Handle audit tab search click
+  const handleAuditTabSearchClick = () => {
+    // Placeholder implementation for audit tab search
+    console.log("Audit tab search clicked");
+  };
+
+  // Toggle select all
+  const toggleSelectAll = () => {
+    // Placeholder implementation
+    console.log("Toggle select all clicked");
+  };
+
+  // Toggle settlement selection
+  const toggleSettlementSelection = (sessionId: string) => {
+    // Placeholder implementation
+    console.log("Toggle settlement selection for:", sessionId);
+  };
+
+  // Sign and submit transaction
+  const signAndSubmitTransaction = () => {
+    // Placeholder implementation
+    console.log("Sign and submit transaction clicked");
+  };
+
+  // Generate settlement preview
+  const generateSettlementPreview = () => {
+    // Placeholder implementation
+    console.log("Generate settlement preview clicked");
   };
 
   // Handle export JSON
   const handleExportJSON = () => {
-    if (!auditSearchResult) {
-      toast.error("No audit data to export");
-      return;
-    }
-
-    // Create a more comprehensive JSON structure
-    const exportData = {
-      auditReport: {
-        sessionInfo: {
-          sessionId: auditSearchResult.sessionId,
-          merkleRoot: auditSearchResult.merkleRoot,
-          txHash: auditSearchResult.txHash,
-          timestamp: auditSearchResult.timestamp,
-          operator: auditSearchResult.metadata?.["721"]?.operator,
-          walletSigner: auditSearchResult.walletSigner,
-          amount: auditSearchResult.metadata?.["721"]?.amount,
-        },
-        verification: verificationResult,
-        metadata: auditSearchResult.metadata,
-        auditTrail: auditSearchResult.auditTrail,
-        exportTimestamp: new Date().toISOString(),
-      },
-    };
-
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `audit-proof-${auditSearchResult.sessionId || "data"}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success("Proof JSON exported successfully!");
+    // Placeholder implementation
+    console.log("Export JSON clicked");
   };
 
   // Handle export PDF
   const handleExportPDF = () => {
-    if (!auditSearchResult) {
-      toast.error("No audit data to export");
-      return;
-    }
-
-    // Generate a more structured report content
-    const content = `
-AUDIT PROOF REPORT
-=================
-
-Session ID: ${auditSearchResult.sessionId || "N/A"}
-Merkle Root: ${auditSearchResult.merkleRoot || "N/A"}
-Transaction Hash: ${auditSearchResult.txHash || "N/A"}
-Timestamp: ${
-      auditSearchResult.timestamp
-        ? new Date(auditSearchResult.timestamp).toLocaleString()
-        : "N/A"
-    }
-Operator: ${auditSearchResult.metadata?.["721"]?.operator || "N/A"}
-Wallet Signer: ${auditSearchResult.walletSigner || "N/A"}
-Amount: ${auditSearchResult.metadata?.["721"]?.amount || "N/A"}
-
-VERIFICATION STATUS: ${
-      verificationResult?.verified ? "✅ VERIFIED" : "❌ NOT VERIFIED"
-    }
-Verification Message: ${verificationResult?.message || "N/A"}
-Computed Hash: ${verificationResult?.computedHash || "N/A"}
-
-Metadata:
-${JSON.stringify(auditSearchResult.metadata || {}, null, 2)}
-
-Audit Trail:
-${
-  auditSearchResult.auditTrail
-    ? auditSearchResult.auditTrail
-        .map(
-          (trail: any) =>
-            `${trail.action} - ${new Date(
-              trail.timestamp
-            ).toLocaleString()} - ${trail.actor}`
-        )
-        .join("\n")
-    : "N/A"
-}
-
-Generated on: ${new Date().toLocaleString()}
-`;
-
-    const dataBlob = new Blob([content], { type: "application/pdf" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `audit-report-${auditSearchResult.sessionId || "data"}.pdf`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success("PDF report exported successfully!");
+    // Placeholder implementation
+    console.log("Export PDF clicked");
   };
 
-  // Mock data for export
-  const mockAuditData = [
-    {
-      id: "SES-001",
-      verified: true,
-      operator: "Casino A",
-      time: "2024-01-15 14:32",
-    },
-    {
-      id: "SES-002",
-      verified: true,
-      operator: "Casino B",
-      time: "2024-01-15 13:15",
-    },
-    {
-      id: "SES-003",
-      verified: false,
-      operator: "Casino C",
-      time: "2024-01-15 12:45",
-    },
-    {
-      id: "SES-004",
-      verified: true,
-      operator: "Casino A",
-      time: "2024-01-15 11:20",
-    },
-  ];
+  // Handle export settlements CSV
+  const handleExportSettlementsCSV = () => {
+    // Placeholder implementation
+    console.log("Export settlements CSV clicked");
+  };
 
-  // Mock settlement history data
-  const mockSettlementHistory = [
-    {
-      id: "SETT-001",
-      sessionId: "SES-001",
-      amount: 150.5,
-      fee: 1.51,
-      txHash:
-        "7f192ffa95992f888b06353688ab9b1df32be4ede5c6476bc86a8369ee640b13",
-      status: "settled",
-      timestamp: "2024-01-15T14:30:00Z",
-    },
-    {
-      id: "SETT-002",
-      sessionId: "SES-002",
-      amount: 75.25,
-      fee: 0.75,
-      txHash:
-        "a1b2c3d4e5f67890123456789012345678901234567890123456789012345678",
-      status: "settled",
-      timestamp: "2024-01-15T13:45:00Z",
-    },
-    {
-      id: "SETT-003",
-      sessionId: "SES-004",
-      amount: 200.0,
-      fee: 2.0,
-      txHash:
-        "b2c3d4e5f6789012345678901234567890123456789012345678901234567890",
-      status: "pending",
-      timestamp: "2024-01-15T12:15:00Z",
-    },
-    {
-      id: "SETT-004",
-      sessionId: "SES-005",
-      amount: 325.75,
-      fee: 3.26,
-      txHash:
-        "c3d4e5f678901234567890123456789012345678901234567890123456789012",
-      status: "settled",
-      timestamp: "2024-01-15T11:30:00Z",
-    },
-  ];
+  // Copy to clipboard
+  const copyToClipboard = (text: string) => {
+    // Placeholder implementation
+    console.log("Copy to clipboard:", text);
+  };
 
-  // Fetch pending settlements and settlement history
+  // View on explorer
+  const viewOnExplorer = (txHash: string) => {
+    // Placeholder implementation
+    console.log("View on explorer:", txHash);
+  };
+
+  // Handle export settlement receipt
+  const handleExportSettlementReceipt = (settlement: SettlementHistoryItem) => {
+    // Placeholder implementation
+    console.log("Export settlement receipt:", settlement);
+  };
+
+  // Get status badge
+  const getStatusBadge = (status: string) => {
+    // Placeholder implementation
+    return <Badge>{status}</Badge>;
+  };
+
+  // Handle the audit loader display
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch pending settlements
-        const response = await fetch("/api/settlement-builder");
-        if (response.ok) {
-          const data = await response.json();
-          setPendingSettlements(data);
-        }
+    const timer = setTimeout(() => {
+      setShowAuditLoader(false);
+    }, 3500);
 
-        // Set mock settlement history (in a real app, this would come from an API)
-        setSettlementHistory(mockSettlementHistory);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        toast.error("Failed to load settlement data");
-      }
-    };
-
-    fetchData();
+    return () => clearTimeout(timer);
   }, []);
 
-  // Handle settlement selection
-  const toggleSettlementSelection = (sessionId: string) => {
-    const newSelected = new Set(selectedSettlements);
-    if (newSelected.has(sessionId)) {
-      newSelected.delete(sessionId);
-    } else {
-      newSelected.add(sessionId);
-    }
-    setSelectedSettlements(newSelected);
-  };
-
-  // Get status badge component
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "settled":
-        return (
-          <Badge className="gap-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            <Check className="w-3 h-3" />
-            Settled
-          </Badge>
-        );
-      case "pending":
-        return (
-          <Badge className="gap-1 bg-amber-500/10 text-amber-500 border border-amber-500/20">
-            <Clock className="w-3 h-3" />
-            Pending
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
-  // Copy to clipboard function
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
-  };
-
-  // View on explorer function
-  const viewOnExplorer = (txHash: string) => {
-    // In a real app, this would open the Blockfrost explorer
-    window.open(
-      `https://blockfrost.io/projects/mainnet/transactions/${txHash}`,
-      "_blank"
+  // Show loader initially
+  if (showAuditLoader) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center">
+          <img
+            src="/audit_loder.jpg"
+            alt="Audit Loader"
+            className="mx-auto mb-4 rounded-lg shadow-lg"
+            style={{ maxWidth: "400px", height: "auto" }}
+            onError={(e) => {
+              console.error("Failed to load audit loader image:", e);
+              // Hide loader if image fails to load
+              setTimeout(() => setShowAuditLoader(false), 100);
+            }}
+          />
+          <p className="text-muted-foreground">Loading audit data...</p>
+          {user?.email && (
+            <p className="text-muted-foreground text-sm mt-2">
+              Welcome, {user.email}
+            </p>
+          )}
+        </div>
+      </div>
     );
-  };
-
-  // Export settlement receipt function
-  const handleExportSettlementReceipt = (settlement: any) => {
-    // Prepare receipt data
-    const receiptData = {
-      settlementId: settlement.id,
-      sessionId: settlement.sessionId,
-      amount: settlement.amount,
-      fee: settlement.fee,
-      txHash: settlement.txHash,
-      status: settlement.status,
-      timestamp: settlement.timestamp,
-    };
-
-    // Export using our utility function
-    const result = exportSettlementReceipt(receiptData);
-
-    if (result.success) {
-      toast.success("Settlement receipt exported successfully!");
-    } else {
-      toast.error(`Failed to export receipt: ${result.error}`);
-    }
-  };
-
-  // Export all settlements as CSV
-  const handleExportSettlementsCSV = () => {
-    const result = exportSettlementsCSV(settlementHistory);
-
-    if (result.success) {
-      toast.success("Settlements exported successfully!");
-    } else {
-      toast.error(`Failed to export settlements: ${result.error}`);
-    }
-  };
-
-  // Handle select all
-  const toggleSelectAll = () => {
-    if (selectedSettlements.size === pendingSettlements.length) {
-      setSelectedSettlements(new Set());
-    } else {
-      setSelectedSettlements(
-        new Set(pendingSettlements.map((s) => s.sessionId))
-      );
-    }
-  };
-
-  // Generate settlement preview
-  const generateSettlementPreview = async () => {
-    if (selectedSettlements.size === 0) return;
-
-    setIsGenerating(true);
-    try {
-      const response = await fetch("/api/settlement-builder", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "preview",
-          sessionIds: Array.from(selectedSettlements),
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSettlementPreview(data);
-      }
-    } catch (error) {
-      console.error("Failed to generate settlement preview:", error);
-      toast.error("Failed to generate settlement preview");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // Real Lucid wallet signing and submission
-  const signAndSubmitTransaction = async () => {
-    if (!walletAddress) {
-      toast.error("Please enter a wallet address");
-      return;
-    }
-
-    if (selectedSettlements.size === 0) {
-      toast.error("Please select at least one settlement");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // Step 1: Get unsigned transaction
-      const response = await fetch("/api/settlement-builder", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "submit",
-          sessionIds: Array.from(selectedSettlements),
-          walletAddress: walletAddress,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to prepare transaction");
-      }
-
-      const result = await response.json();
-
-      // Check if batch processing is required
-      if (result.batchInfo) {
-        setBatchInfo(result.batchInfo);
-        setBatchTransactions(result.batchTransactions || []);
-        toast.info(
-          `Batch processing required: ${result.batchInfo.batchCount} transactions needed`
-        );
-
-        // For batch processing, we would need to handle multiple transactions
-        // In a real implementation, you would process each batch transaction separately
-        // For now, we'll just show the information
-        console.log("Batch transactions:", result.batchTransactions);
-      }
-
-      const { unsignedTx } = result;
-
-      // Step 2: Initialize Lucid and build transaction
-      toast.info("Initializing Lucid wallet...");
-
-      const lucid = await initLucid();
-      if (!lucid) {
-        throw new Error("Failed to initialize Lucid");
-      }
-
-      // Build and sign the transaction
-      toast.info("Building and signing transaction...");
-
-      const signedTx = await buildSettlementTransaction(
-        lucid,
-        unsignedTx.inputs,
-        unsignedTx.outputs,
-        unsignedTx.metadata
-      );
-
-      if (!signedTx) {
-        throw new Error("Failed to build and sign transaction");
-      }
-
-      // Step 3: Submit the transaction
-      toast.info("Submitting transaction to the network...");
-
-      const txHash = await submitTransaction(lucid, signedTx);
-
-      if (!txHash) {
-        throw new Error("Failed to submit transaction");
-      }
-
-      // Step 4: Finalize settlements
-      const finalizeResponse = await fetch("/api/settlement-builder", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "finalize",
-          sessionIds: Array.from(selectedSettlements),
-          txHash: txHash,
-        }),
-      });
-
-      if (!finalizeResponse.ok) {
-        const error = await finalizeResponse.json();
-        throw new Error(error.error || "Failed to finalize settlements");
-      }
-
-      // Success
-      toast.success(
-        `Settlement completed successfully! Tx Hash: ${txHash.substring(
-          0,
-          16
-        )}...`
-      );
-
-      // Reset state
-      setSelectedSettlements(new Set());
-      setSettlementPreview(null);
-      setBatchInfo(null);
-
-      // Refresh settlements list
-      const refreshResponse = await fetch("/api/settlement-builder");
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        setPendingSettlements(data);
-      }
-
-      // Add to settlement history
-      const newSettlement = {
-        id: `SETT-${Date.now()}`,
-        sessionId: Array.from(selectedSettlements).join(", "),
-        amount: parseFloat(settlementPreview?.totalAmount || 0),
-        fee: parseFloat(settlementPreview?.fee || 0),
-        txHash: txHash,
-        status: "settled",
-        timestamp: new Date().toISOString(),
-      };
-
-      setSettlementHistory((prev) => [newSettlement, ...prev]);
-    } catch (error) {
-      console.error("Failed to complete settlement:", error);
-      toast.error(
-        `Settlement failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }
 
   return (
     <div className="flex-1 overflow-auto">
@@ -640,67 +275,6 @@ Generated on: ${new Date().toLocaleString()}
             Search and verify game integrity proofs on-chain
           </p>
         </div>
-
-        {/* Search Panel */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Search className="w-5 h-5" />
-                  Proof Verification
-                </CardTitle>
-                <CardDescription>
-                  Search by Session ID, Tx Hash, or Merkle Root
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => exportAuditData(mockAuditData)}
-                className="flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Export Audit Data
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex flex-col gap-3">
-                <Tabs
-                  value={searchType}
-                  onValueChange={setSearchType}
-                  className="w-full"
-                >
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="session">Session ID</TabsTrigger>
-                    <TabsTrigger value="txhash">Tx Hash</TabsTrigger>
-                    <TabsTrigger value="merkle">Merkle Root</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder={
-                      searchType === "session"
-                        ? "Enter session ID..."
-                        : searchType === "txhash"
-                        ? "Enter transaction hash..."
-                        : "Enter merkle root..."
-                    }
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && handleAuditSearch(searchTerm)
-                    }
-                  />
-                  <Button onClick={() => handleAuditSearch(searchTerm)}>
-                    Search
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <Tabs defaultValue="verify" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
@@ -1239,11 +813,11 @@ Generated on: ${new Date().toLocaleString()}
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           onKeyDown={(e) =>
-                            e.key === "Enter" && handleAuditSearch()
+                            e.key === "Enter" && handleAuditTabSearchClick()
                           }
                         />
                         <Button
-                          onClick={handleAuditSearch}
+                          onClick={handleAuditTabSearchClick}
                           disabled={isSearching}
                         >
                           {isSearching ? (
